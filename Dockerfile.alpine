@@ -1,0 +1,20 @@
+FROM amd64/rust:alpine AS build
+ENV TZ=Europe/Berlin
+WORKDIR /work
+ADD . .
+USER root
+RUN cp /work/entrypoint-alpine.sh /entrypoint.sh
+ENTRYPOINT [ "/entrypoint.sh" ]
+ENV RUSTFLAGS="-llzma -C target-feature=+crt-static -C link-self-contained=no"
+RUN apk update && apk upgrade && apk add --no-cache musl-dev libunwind libunwind-static libunwind-dev xz xz-dev xz-static xz-libs && chmod ugo+x /entrypoint.sh
+RUN rustup target add x86_64-unknown-linux-musl
+RUN cargo update && cargo build --target x86_64-unknown-linux-musl --release
+RUN cargo test --target x86_64-unknown-linux-musl --release 
+RUN rustup component add llvm-tools-preview
+RUN cargo install cargo-pgo
+RUN cargo pgo build -- --target x86_64-unknown-linux-musl
+#RUN cargo pgo test
+RUN /work/target/x86_64-unknown-linux-musl/release/fd -d -s"1.1.19 0:0:0" /work/misc/server-local.log
+RUN cargo pgo optimize
+RUN pwd && find / -name fd*
+RUN cat /etc/*-release 

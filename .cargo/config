@@ -1,0 +1,4 @@
+[build]
+# rustflags = ["-Ctarget-cpu=native"]
+# rustflags = ["-Ctarget-feature=+sse2"]
+# rustflags = ["-Ctarget-feature=+avx"]
