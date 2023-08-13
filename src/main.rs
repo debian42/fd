@@ -12,7 +12,8 @@ use mimalloc::MiMalloc;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-/// F. P.:  Program to filter carmen/yoda logfiles(byte encoded) by datetime
+/// F. P.:  Program to filter carmen/yoda logfiles(byte encoded) by datetime. 
+/// Only till seconds (no millis and more)
 #[derive(Parser, Debug)]
 #[command(version)]
 struct CMDArgs {
@@ -23,6 +24,10 @@ struct CMDArgs {
     /// Use other algo
     #[arg(short, long,)]
     fast: bool,
+
+    /// replace input with YYYY-MM-DD hh:mm:ss(2023-01-24 13:57:31) in output
+    #[arg(short, long,)]
+    replace: bool,
 
     /// The optional start date: dd.mm.yyyy HH::MM:SS
     #[arg(short, long)]
@@ -67,6 +72,7 @@ fn main() {
             None,
             args.debug,
             args.fast,
+            args.replace,
             &mut std::io::stdout(),
             &mut std::io::stdin(),
         );
@@ -79,6 +85,7 @@ fn main() {
                 Some(filename),
                 args.debug,
                 args.fast,
+                args.replace,
                 &mut std::io::stdout(),
                 &mut std::io::stdin(),
             );

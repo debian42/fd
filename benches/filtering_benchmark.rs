@@ -113,6 +113,7 @@ fn parse_benchmark_server_local_log(c: &mut Criterion) {
                     Some(filename),
                     0,
                     true, 
+                    false,
                     &mut out,
                     &mut std::io::stdin(),
                 );
@@ -120,6 +121,34 @@ fn parse_benchmark_server_local_log(c: &mut Criterion) {
         })
     });
 }
+
+fn parse_benchmark_server_local_log_replace(c: &mut Criterion) {
+    let filename = if env::consts::OS == "windows" {
+        r".\misc\server-local.log"
+    } else {
+        r"./misc/server-local.log"
+    };
+    let mut out: Vec<u8> = Vec::with_capacity(2_000_000);
+    c.bench_function("server-local.log replace", |b| {
+        b.iter(|| {
+            black_box({
+                out.clear();
+                let start_end_date: DateTimeHolder =
+                    DateTimeHolder::new(Some(&"1.1.23 0:0:0".to_string()), None);
+                process_file(
+                    &start_end_date,
+                    Some(filename),
+                    0,
+                    true, 
+                    true,
+                    &mut out,
+                    &mut std::io::stdin(),
+                );
+            })
+        })
+    });
+}
+
 
 fn benchmark_line_carmen(c: &mut Criterion) {
     let log_line = black_box(r#"30.12.22 02:30:57 M     0 FILE /users/cloud/user1/data/projects/carmen-224/tfc_source/tfc_apps/src/tfcwebserviceprovider/tfcrpc.cpp:615 [CRequestSOAP] PID: 3825 ServiceCall http://de.de.de/services/ERP/IntangibleAsset/SIMReadServices/getSIMInfo7.getSIMInfo7 CorrelationId: a63b1b3d-59bb-4851-8c98-c655"#.to_string().into_bytes());
@@ -131,7 +160,7 @@ fn benchmark_line_carmen(c: &mut Criterion) {
                 out.clear();
                 let start_end_date: DateTimeHolder =
                     DateTimeHolder::new(Some(&"1.1.23 0:0:0".to_string()), None);
-                process_file(&start_end_date, None, 0,true,  &mut out, &mut data);
+                process_file(&start_end_date, None, 0,true, false, &mut out, &mut data);
             })
         })
     });
@@ -147,7 +176,7 @@ fn benchmark_line_yoda(c: &mut Criterion) {
                 out.clear();
                 let start_end_date: DateTimeHolder =
                     DateTimeHolder::new(Some(&"1.1.23 0:0:0".to_string()), None);
-                process_file(&start_end_date, None, 0,true,  &mut out, &mut data);
+                process_file(&start_end_date, None, 0,true, false, &mut out, &mut data);
             })
         })
     });
@@ -169,6 +198,6 @@ criterion_group! {
        config = custom_config();
        targets = benchmark_date_time_holder_new, bench_normalized_datetime_yoda,
        bench_normalized_datetime_carmen, bench_normalized_datetime_carmen_error, bench_normalized_datetime_naive_carmen_err,
-       parse_benchmark_server_local_log, benchmark_line_carmen, benchmark_line_yoda, bench_normalized_datetime_naive_carmen
+       parse_benchmark_server_local_log, parse_benchmark_server_local_log_replace, benchmark_line_carmen, benchmark_line_yoda, bench_normalized_datetime_naive_carmen
 }
 criterion_main!(benches);

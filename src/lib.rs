@@ -57,6 +57,7 @@ pub fn process_file(
     file_name: Option<&str>,
     debug: u8,
     fast: bool,
+    replace: bool,
     output: &mut impl Write,
     input: &mut impl Read,
 ) {
@@ -103,10 +104,15 @@ pub fn process_file(
         //let log_datetime = normalized_datetime_naive(&buf);
         let log_datetime = if fast {normalized_datetime(&buf)} else {normalized_datetime_naive(&buf)};
         if let Some(log_datetime) = log_datetime {
-            if (log_datetime >= start_end_date.start) & (log_datetime <= start_end_date.end) {
+            if (log_datetime.date_value >= start_end_date.start) & (log_datetime.date_value <= start_end_date.end) {
                 // BufWriter.write_all() gives UTF-8 errors on windows
                 // let retval = output.write_all(&buf);
-                let retval = bw.write_all(&buf);
+                let mut offset:usize = 0;
+                if replace && log_datetime.log_type != LogType::Yoda(19) {
+                    offset = write_to_output(&mut bw, &log_datetime);
+                    
+                }
+                let retval = bw.write_all(&buf[offset..]);
                 match retval {
                     Ok(_) => (),
                     Err(err) => {
@@ -115,9 +121,64 @@ pub fn process_file(
                     }
                 }
             }
+        } else if debug > 1 {
+                eprintln!("{}{}", "couldn't parse DateTime: ".bright_red(), unsafe {
+                    std::str::from_utf8_unchecked(&buf)
+                });
         }
         buf.clear();
     }
+}
+
+// YYYY-MM-DD hh:mm:ss
+//#[inline(never)]
+fn write_to_output(bw: &mut BufWriter<&mut impl Write>, input: &NormRetValue) -> usize {
+    let mut chars : [u8; 19] = Default::default();
+    let v = input.date_value;
+    let year = v >> 40;
+    chars[0] =  (year / 1000) as u8 + 48;
+    chars[1]=  ((year / 100) % 10) as u8 + 48;
+    chars[2] =  ((year / 10) % 10) as u8 + 48;
+    chars[3] =  (year % 10) as u8 + 48;
+    chars[4] = b'-';
+    let month = (v >> 32) & 0xFF;
+    chars[5] = (month / 10) as u8 + 48;
+    chars[6] = (month - ((month / 10) * 10)) as u8 + 48;
+    chars[7] = b'-';
+    let day = (v >> 24) & 0xFF;
+    chars[8] = (day / 10) as u8 + 48;
+    chars[9] = (day - ((day / 10) * 10)) as u8 + 48;
+    chars[10] = b' ';
+    let hour = (v >> 16) & 0xFF;
+    chars[11] = (hour / 10) as u8 + 48;
+    chars[12] = (hour - ((hour / 10) * 10)) as u8 + 48;
+    chars[13] = b':';
+    let minute = (v >> 8) & 0xFF;
+    chars[14] = (minute / 10) as u8 + 48;
+    chars[15] = (minute - ((minute / 10) * 10)) as u8 + 48;
+    chars[16] = b':';
+    let second = v & 0xFF;
+    chars[17] = (second / 10) as u8 + 48;
+    chars[18] = (second - ((second / 10) * 10)) as u8 + 48;
+     
+    let _ignore = bw.write_all(&chars);
+    (match input.log_type {
+        LogType::Carmen(n) => n,
+        LogType::CarmenErr(n) => n,
+        LogType::Yoda(n) => n,
+    }) as usize 
+}
+
+#[derive(PartialEq)]
+pub enum LogType {
+    Carmen(u8),
+    CarmenErr(u8),
+    Yoda(u8),
+}
+
+pub struct NormRetValue  {
+    pub date_value: u64,
+    pub log_type: LogType
 }
 
 // disgusting but ~3x faster 
@@ -125,7 +186,7 @@ pub fn process_file(
 // 24.12.22 00:02:05
 // 20230729111238
 //#[inline(always)]
-pub fn normalized_datetime(buf: &[u8]) -> Option<u64> 
+pub fn normalized_datetime(buf: &[u8]) -> Option<NormRetValue> 
 {    
     if (buf.len() > 14) && ( 
        (buf[0] >= 48) & (buf[0] <= 57) & (buf[1] >= 48) & (buf[1] <= 57) &
@@ -162,7 +223,8 @@ pub fn normalized_datetime(buf: &[u8]) -> Option<u64>
             let minute = ((buf[14] as i16) - 48) * 10 + ((buf[15] as i16) - 48);
             let second = ((buf[17] as i16) - 48) * 10 + ((buf[18] as i16)- 48);
 
-            return calc_u64(second, minute, hour, day, month, year);
+            let date_value = calc_u64(second, minute, hour, day, month, year)?;
+            return Some(NormRetValue{date_value, log_type:LogType::Yoda(19)});
         }
     }
     
@@ -185,7 +247,8 @@ pub fn normalized_datetime(buf: &[u8]) -> Option<u64>
         let minute = ((buf[10] as i16) - 48) * 10 + ((buf[11] as i16) - 48);
         let second = ((buf[12] as i16) - 48) * 10 + ((buf[13] as i16) - 48);
 
-        return calc_u64(second, minute, hour, day, month, year);
+        let date_value = calc_u64(second, minute, hour, day, month, year)?;
+        return Some(NormRetValue{date_value,  log_type:LogType::CarmenErr(14)});
     }
     
     // 24.12.22 00:02:05 carmen normal 
@@ -206,7 +269,9 @@ pub fn normalized_datetime(buf: &[u8]) -> Option<u64>
             let hour = ((buf[9] as i16) - 48) * 10 + ((buf[10] as i16) - 48);
             let minute = ((buf[12] as i16) - 48) * 10 + ((buf[13] as i16) - 48);
             let second = ((buf[15] as i16) - 48) * 10 + ((buf[16] as i16) - 48);
-            return calc_u64(second, minute, hour, day, month, year);
+
+            let date_value = calc_u64(second, minute, hour, day, month, year)?;
+            return Some(NormRetValue{date_value,  log_type:LogType::Carmen(17)});
         }
     }
 
@@ -231,7 +296,7 @@ fn calc_u64(second: i16, minute: i16, hour: i16, day: i16, month: i16, year: i32
 // 2023-02-01 08:18:12,
 // 24.12.22 00:02:05
 //#[inline(always)]
-pub fn normalized_datetime_naive(buf: &[u8]) -> Option<u64> {
+pub fn normalized_datetime_naive(buf: &[u8]) -> Option<NormRetValue> {
     if buf.len() < 19 {
         return None;
     }
@@ -245,15 +310,15 @@ pub fn normalized_datetime_naive(buf: &[u8]) -> Option<u64> {
     let line_str = unsafe { std::str::from_utf8_unchecked(buf) };
     let dt = NaiveDateTime::parse_from_str(&line_str[..17], carmen_fmt);
     match dt {
-        Ok(d) => Some(normalize_bits(d)),
+        Ok(d) => Some(NormRetValue{date_value: normalize_bits(d), log_type:LogType::Carmen(17)}),
         Err(_) => {
             let dt = NaiveDateTime::parse_from_str(&line_str[..19], yoda_fmt);
             match dt {
-                Ok(d) => Some(normalize_bits(d)),
+                Ok(d) => Some(NormRetValue{date_value: normalize_bits(d), log_type:LogType::Yoda(19)}),
                 Err(_) => {
                     let dt = NaiveDateTime::parse_from_str(&line_str[..14], carmen_fmt_err);
                     match dt {
-                        Ok(d) => Some(normalize_bits(d)),
+                        Ok(d) => Some(NormRetValue{date_value: normalize_bits(d), log_type:LogType::CarmenErr(14)}),
                         Err(_) => None,
                     }
                 }

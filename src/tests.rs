@@ -21,7 +21,7 @@ mod test {
         let log_line = r#"2099-12-31 00:00:01,828"#.to_string().into_bytes();
         let log_datetime = normalized_datetime(&log_line);
         let start_end_date: DateTimeHolder = DateTimeHolder::new(None, Some(&"31.12.99 0:0:1".to_string()));
-        assert_eq!(log_datetime.unwrap(), start_end_date.end);
+        assert_eq!(log_datetime.unwrap().date_value, start_end_date.end);
     }    
 
     #[test]
@@ -29,7 +29,7 @@ mod test {
         let log_line = r#"2023-01-26 09:32:28,828 INFO  [null,d7256a35f724f75f9083233230373335393931] [de.telekom.crm.rest.service.base.impl.ServiceStateContainerFilter] (default task-24) START SERVICE [/EmailVerificationResult/v1/business-partner/email/verification-result] Header: Accept:[application/json, application/*+json] Accept-Encoding:[gzip] Authorization:[Bearer }"#.to_string().into_bytes();
         let log_datetime = normalized_datetime(&log_line);
         assert!(log_datetime.is_some());
-        assert_eq!(log_datetime.unwrap(), 2224316754763804);
+        assert_eq!(log_datetime.unwrap().date_value, 2224316754763804);
     } 
     
     #[test]
@@ -93,7 +93,7 @@ mod test {
         let log_line = r#"30.12.22 00:22:52 M     0 FILE /users/cloud/user1/data/projects/Software/tfc_source/tfc_apps/src/tfcwebserviceprovider/tfcrpc.cpp:615 [CRequestSOAP] PID: 3825 ServiceCall HTMX:\rwv/services/ERP/IntangibleAsset/SIMReadServices/getSIMInfo7.getSIMInfo7 CorrelationId: a63b1b3d-59bb-4851-8c98-c655"#.to_string().into_bytes();
         let log_datetime = normalized_datetime(&log_line);
         assert!(log_datetime.is_some());
-        assert_eq!(log_datetime.unwrap(), 2223264554292788);
+        assert_eq!(log_datetime.unwrap().date_value, 2223264554292788);
     }
 
     #[test]
@@ -101,7 +101,7 @@ mod test {
         let log_line = r#"20230729111238;edeyl6;;TfcWebserviceProvider;1950;E;0;0 Nr: 2 Message: E_TechUnexpectedService: ErrorCount=0;WorstError=-1;SubsystemID=0;TextDBID=0;LocationNr=0;FileName=//users//cloud//user1//data//projects//SoftWare//ccb_source//ccr_apps//src//servicesimpl//resourcereadservices//impl//CCGetSIMProfileStatus2ServiceImplementation.cpp;LineNumber=174;ErrorNo=2;Text=E_ProfServiceFailed: Fehler 2 beim Aufruf von IRIS-Service GetProfileStatus: Die ICC-ID ist im eSIM-System nicht bekannt.\nIRIS Fehlerinfo: Unknown ICCID;TextID=0;Recommendation=0;Level=5;OutputChannel=0;ExceptionClassName=E_TechUnexpectedService;ProcessId=0;ThreadId=0;ChannelId=0; 0  /users/cloud/user1/data/projects/SoftWare/tfc_source/tfc_apps/src/tfcwebserviceprovider/tfcrpc.cpp 398 TfcRpc 0;B2164F67-1BCF-4E57-BC58-6A17B74CA8CD"#.to_string().into_bytes();
         let log_datetime = normalized_datetime(&log_line);
         assert!(log_datetime.is_some());
-        assert_eq!(log_datetime.unwrap(), 2224342575025190);
+        assert_eq!(log_datetime.unwrap().date_value, 2224342575025190);
     }
 
     #[test]
@@ -109,7 +109,7 @@ mod test {
         let log_line = r#"20230729111238;"#.to_string().into_bytes();
         let log_datetime = normalized_datetime(&log_line);
         assert!(log_datetime.is_some());
-        assert_eq!(log_datetime.unwrap(), 2224342575025190);
+        assert_eq!(log_datetime.unwrap().date_value, 2224342575025190);
     }
 
     #[test]
@@ -117,7 +117,7 @@ mod test {
         let log_line = r#"2023-01-26 09:32:28"#.to_string().into_bytes();
         let log_datetime = normalized_datetime(&log_line);
         assert!(log_datetime.is_some());
-        assert_eq!(log_datetime.unwrap(), 2224316754763804);
+        assert_eq!(log_datetime.unwrap().date_value, 2224316754763804);
     }
 
     #[test]
@@ -128,7 +128,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"1.1.20 0:0:0".to_string()), None);
         assert_eq!(start_end_date.end, u64::MAX,  " {} and {}", start_end_date.end, u64::MAX);
-        process_file(&start_end_date, None, 0,true, &mut out, &mut data);
+        process_file(&start_end_date, None, 0,true, false, &mut out, &mut data);
         assert_eq!(data.into_inner(), out);
     }
 
@@ -140,7 +140,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"30.12.22 02:30:57".to_string()), Some(&"31.12.22 0:0:0".to_string()));
         assert_eq!(start_end_date.end, 2223264571064320);
-        process_file(&start_end_date, None, 0, false, &mut out, &mut data);
+        process_file(&start_end_date, None, 0, false, false, &mut out, &mut data);
         assert_eq!(data.into_inner(), out);
     }
 
@@ -152,7 +152,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"30.12.22 02:30:57".to_string()), Some(&"31.12.22 0:0:0".to_string()));
         assert_eq!(start_end_date.end, 2223264571064320);
-        process_file(&start_end_date, None, 0, true, &mut out, &mut data);
+        process_file(&start_end_date, None, 0, true, false, &mut out, &mut data);
         assert_eq!(data.into_inner(), out);
     }
 
@@ -163,7 +163,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(None, Some(&"31.12.99 0:0:0".to_string()));
         assert_eq!(start_end_date.start, 0);
-        process_file(&start_end_date, None, 0, true, &mut out, &mut data);
+        process_file(&start_end_date, None, 0, true, false, &mut out, &mut data);
         assert_eq!(data.into_inner(), out);
     }
 
@@ -175,7 +175,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(None, Some(&"31.12.22 0:0:0".to_string()));
         assert_eq!(start_end_date.end, 2223264571064320);
-        process_file(&start_end_date, None, 0, true, &mut out, &mut data);
+        process_file(&start_end_date, None, 0, true, false, &mut out, &mut data);
         assert_eq!(data.into_inner(), out);
     }
 
@@ -187,7 +187,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"1.1.23 0:0:0".to_string()), None);
         assert_eq!(start_end_date.end, u64::MAX,  " {} and {}", start_end_date.end, u64::MAX);
-        process_file(&start_end_date, None, 0,true,&mut out, &mut data);
+        process_file(&start_end_date, None, 0,true, false, &mut out, &mut data);
         assert!(out.is_empty());
     }
 
@@ -199,7 +199,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"14.01.2023 13:57:30".to_string()), None);
         assert_eq!(start_end_date.end, u64::MAX,  " {} and {}", start_end_date.end, u64::MAX);
-        process_file(&start_end_date, None, 0,true,  &mut out, &mut data);
+        process_file(&start_end_date, None, 0,true, false, &mut out, &mut data);
     }
 
     #[test]
@@ -210,7 +210,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"24.01.2023 13:57:31".to_string()), None);
         assert_eq!(start_end_date.end, u64::MAX,  " {} and {}", start_end_date.end, u64::MAX);
-        process_file(&start_end_date, None, 0,true,  &mut out, &mut data);
+        process_file(&start_end_date, None, 0,true, false, &mut out, &mut data);
         assert_eq!(data.into_inner(), out);
     }
 
@@ -222,7 +222,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"24.01.2023 13:57:31".to_string()), None);
         assert_eq!(start_end_date.end, u64::MAX,  " {} and {}", start_end_date.end, u64::MAX);
-        process_file(&start_end_date, None, 0,false,  &mut out, &mut data);
+        process_file(&start_end_date, None, 0,false, false, &mut out, &mut data);
         assert_eq!(data.into_inner(), out);
     }
 
@@ -234,8 +234,35 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"24.01.2023 13:57:32".to_string()), None);
         assert_eq!(start_end_date.end, u64::MAX,  " {} and {}", start_end_date.end, u64::MAX);
-        process_file(&start_end_date, None, 0,true,  &mut out, &mut data);
+        process_file(&start_end_date, None, 0,true, false, &mut out, &mut data);
         assert!(out.is_empty());
+    }
+
+    #[test]
+    fn test_parse_date_yoda_replace() {
+        let log_line = r#"2023-01-24 13:57:31,}"#.to_string().into_bytes();
+        let mut data = Cursor::new(log_line);
+        
+        let mut out: Vec<u8> = Vec::new();
+        let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"24.01.2023 13:57:31".to_string()), None);
+        assert_eq!(start_end_date.end, u64::MAX,  " {} and {}", start_end_date.end, u64::MAX);
+        process_file(&start_end_date, None, 0,true, true, &mut out, &mut data);
+        assert_eq!(data.into_inner(), out);
+    }
+
+    #[test]
+    fn test_parse_date_carmen_replace() {
+        let log_line = r#"30.12.99 02:30:57 M "#.to_string().into_bytes();
+        let mut data = Cursor::new(log_line);
+        
+        let mut out: Vec<u8> = Vec::new();
+        let start_end_date: DateTimeHolder = DateTimeHolder::new(Some(&"24.01.2023 13:57:31".to_string()), None);
+        assert_eq!(start_end_date.end, u64::MAX,  " {} and {}", start_end_date.end, u64::MAX);
+        process_file(&start_end_date, None, 0,true, true, &mut out, &mut data);
+        assert_ne!(data.into_inner(), out);
+        let log_line = r#"2099-12-30 02:30:57 M "#.to_string().into_bytes();
+        let data = Cursor::new(log_line);
+        assert_eq!(data.into_inner(), out);
     }
 
     #[test]
@@ -248,7 +275,7 @@ mod test {
         };
         let log_datetime = normalized_datetime_naive(v);
         assert!(log_datetime.is_some());
-        assert_eq!(log_datetime.unwrap(), 2223264554292788);
+        assert_eq!(log_datetime.unwrap().date_value, 2223264554292788);
     }
     
     #[test]
@@ -261,7 +288,7 @@ mod test {
         };
         let log_datetime = normalized_datetime_naive(v);
         assert!(log_datetime.is_some());
-        assert_eq!(log_datetime.unwrap(), 2223264453626395);
+        assert_eq!(log_datetime.unwrap().date_value, 2223264453626395);
     }
 
     #[test]
@@ -274,7 +301,7 @@ mod test {
         };
         let log_datetime = normalized_datetime_naive(v);
         assert!(log_datetime.is_some());
-        assert_eq!(log_datetime.unwrap(), 2224316754763804);
+        assert_eq!(log_datetime.unwrap().date_value, 2224316754763804);
     }
 
     #[test]
@@ -287,6 +314,6 @@ mod test {
         };
         let log_datetime = normalized_datetime_naive(v);
         assert!(log_datetime.is_some());
-        assert_eq!(log_datetime.unwrap(), 2224342575025190);
+        assert_eq!(log_datetime.unwrap().date_value, 2224342575025190);
     }
 }
