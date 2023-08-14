@@ -167,7 +167,8 @@ fn benchmark_line_carmen(c: &mut Criterion) {
 }
 
 fn benchmark_line_yoda(c: &mut Criterion) {
-    let log_line = black_box(r#"2023-01-24 13:57:31,828 INFO  [null,d7256a35f724f75f9083233230373335393931] [de.telekom.crm.rest.service.base.impl.ServiceStateContainerFilter] (default task-24) START SERVICE [/EmailVerificationResult/v1/business-partner/email/verification-result] Header: Accept:[application/json, application/*+json] Accept-Encoding:[gzip] Authorization:[Bearer yyyyyyyyyyyyyyyyyyyyyyyyy] Content-Length:[292] Content-Type:[application/json] Environment:[prod] "#.to_string().into_bytes());
+    let mut log_line = black_box(r#"2023-01-24 13:57:31,828 INFO  [null,d7256a35f724f75f9083233230373335393931] [de.telekom.crm.rest.service.base.impl.ServiceStateContainerFilter] (default task-24) START SERVICE [/EmailVerificationResult/v1/business-partner/email/verification-result] Header: Accept:[application/json, application/*+json] Accept-Encoding:[gzip] Authorization:[Bearer yyyyyyyyyyyyyyyyyyyyyyyyy] Content-Length:[292] Content-Type:[application/json] Environment:[prod] "#.to_string().into_bytes());
+    log_line.append(&mut r#"2023-01-24 13:57:31,828 INFO  [null,d7256a35f724f75f9083233230373335393931] [de.telekom.crm.rest.service.base.impl.ServiceStateContainerFilter] (default task-24) START SERVICE [/EmailVerificationResult/v1/business-partner/email/verification-result] Header: Accept:[application/json, application/*+json] Accept-Encoding:[gzip] Authorization:[Bearer yyyyyyyyyyyyyyyyyyyyyyyyy] Content-Length:[292] Content-Type:[application/json] Environment:[prod] "#.to_string().into_bytes());
     let mut data = Cursor::new(log_line);
     let mut out: Vec<u8> = Vec::with_capacity(100_000);
     c.bench_function("benchmark_line_yoda", |b| {

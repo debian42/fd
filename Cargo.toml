@@ -1,6 +1,6 @@
 [package]
 name = "fd"
-version = "0.1.2"
+version = "0.1.4"
 edition = "2021"
 authors = ["Frank Peters"]
 
@@ -23,8 +23,8 @@ mimalloc = "0.1.37"
 lto = true
 opt-level = 3
 codegen-units = 1
-#strip = "debuginfo"
-debug=true
+strip = "debuginfo"
+#debug=true
 panic = "abort"
 
 [[bench]]
